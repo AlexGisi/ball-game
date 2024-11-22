@@ -5,8 +5,9 @@ from constants import *
 
 @dataclass
 class BallState:
-    y: float
-    vy: float
+    x: float = field(default_factory=lambda: SCREEN_WIDTH * 0.2)
+    y: float = field(default_factory=lambda: GAME_HEIGHT / 2)
+    vy: float = field(default_factory=lambda: 0)
     vy_abs_max: float = 350.0
     
     # def step(self, action):
@@ -32,6 +33,9 @@ class Reference:
         if horizon is None:
             horizon = len(self.values)
         return self.values[:horizon] if horizon > 1 else self.values[horizon]
+    
+    def get_error(self, ball_state):
+        return self.values[int(ball_state.x)] - ball_state.y
     
     def step(self, time):
         frequency = 1 / 30
