@@ -16,6 +16,7 @@ class Logger:
             'ball_vy': game.ball.vy,
             'reference_y': game.reference.values[int(game.ball.x)],
             'action': action,
+            'cost': game.info.episode_costs()[-1],
         })
     
     def write(self, directory=None, filename=None):

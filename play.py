@@ -12,7 +12,7 @@ game = Game(reference_type=sim.RampReference)
 
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-font = pygame.font.Font(pygame.font.get_default_font(), 24)
+font = pygame.font.Font(pygame.font.get_default_font(), 16)
 pygame.display.set_caption("ball game")
 
 running = True
@@ -71,12 +71,6 @@ while running:
     
     ### Update game state ----------
     ep_done, game_done = game.step(action)
-    if ep_done:
-        game.reset()
-        handle_x = slider_x + (slider_width / 2)
-        action = 0.0
-    if game_done:
-        running = False
 
     ### Render ----------
     screen.fill(WHITE)
@@ -101,9 +95,14 @@ while running:
     pygame.draw.circle(screen, DARK_GRAY, (int(handle_x), int(handle_y)), handle_radius)
 
     # Add text
-    gui_str = f"step: {game.info.step}, episode: {game.info.episode}"
-    gui_text = font.render(gui_str, True, (0, 0, 0))
-    screen.blit(gui_text, dest=(0,0))
+    time_str = f"step: {game.info.step}, episode: {game.info.episode}"
+    time_text = font.render(time_str, True, (0, 0, 0))
+    screen.blit(time_text, dest=(0,0))
+    
+    costs = game.info.episode_costs()
+    cost_str = f"cost: {costs[-1]:.2f}, mean: {sum(costs)/len(costs):.2f}, sum: {sum(costs):.2f}"
+    gui_text = font.render(cost_str, True, (0, 0, 0))
+    screen.blit(gui_text, dest=(SCREEN_WIDTH-300,0))
 
     # Update the display
     pygame.display.flip()
@@ -113,6 +112,15 @@ while running:
     
     ### Logging ----------
     logger.log(game=game, action=action)
+    
+    ### ----------
+    # Must be the last thing done, otherwise the reset() can cause out of bounds
+    if ep_done:
+        game.reset()
+        handle_x = slider_x + (slider_width / 2)
+        action = 0.0
+    if game_done:
+        running = False
 
 logger.write(directory='data')
 pygame.quit()

@@ -4,6 +4,9 @@ import sim
 from constants import *   
 
 
+class Episode:
+    def __init__(self):
+        self.observations = []
 
 @dataclass
 class GameInfo:
@@ -11,7 +14,17 @@ class GameInfo:
     episode_step: int = 0
     episode: int = 0
     
-    observations = []
+    episodes = []
+    current_episode = Episode()
+    
+    def reset(self):
+        self.episodes.append(self.current_episode)
+        self.current_episode = Episode()
+        self.episode += 1
+        self.episode_step = 0
+    
+    def episode_costs(self):
+        return [obs.cost for obs in self.current_episode.observations]
     
 
 class Game:
@@ -26,7 +39,7 @@ class Game:
         self.reference.step(self.info.episode_step)
         
         observation = TrainingObservation(self.ball, self.reference, action, self.cost())
-        self.info.observations.append(observation)
+        self.info.current_episode.observations.append(observation)
                 
         self.info.last_action = action
         self.info.step += 1
@@ -37,12 +50,10 @@ class Game:
     def reset(self):
         self.ball.reset()
         self.reference.reset()
-        
-        self.info.episode += 1
-        self.info.episode_step = 0
+        self.info.reset()
         
     def cost(self):
-        return self.reference.y_ref() - self.ball.output()
+        return (self.reference.y_ref() - self.ball.output())**2 / 1_000
     
     def episode_done(self):
         return self.info.episode_step > EPISODE_MAX_LENGTH
