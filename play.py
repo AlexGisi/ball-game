@@ -1,24 +1,20 @@
 import argparse
 import pygame
-import math
-import time
 
 from logger import Logger
-import sim
 import control
 from constants import *
+from game import *
 
 # Initialize Pygame
 pygame.init()
-
-ball_state = sim.BallState()
-reference = sim.Reference()
+game = Game(reference_type=sim.SineReference)
 
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+font = pygame.font.Font(pygame.font.get_default_font(), 24)
 pygame.display.set_caption("ball game")
 
-step_count = 0
 running = True
 
 # Slider Properties
@@ -41,9 +37,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--operator', default='human')
 args = parser.parse_args()
 
-time.sleep(5)
 # Game Loop
 while running:
+    
+    ### get action ----------
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -65,38 +62,37 @@ while running:
                     handle_x = max(slider_x, min(mouse_x, slider_x + slider_width))
                     # Update action value based on handle position
                     action = ((handle_x - slider_x) / slider_width)*2 - 1
-                    
+              
+    error = game.reference.get_error(game.ball)      
     if args.operator == "pid":
-        # if step_count > 639:
-        #     breakpoint()
-        error = reference.get_error(ball_state)
         action = pid.control(error)
     
-    print(f"{step_count}\t{action}\t{error}\t({ball_state.x}, {ball_state.y})")
+    # print(f"{game.step}\t{action}\t{error}\t({game.ball.x}, {game.ball.y})")
+    
+    ### Update game state ----------
+    ep_done, game_done = game.step(action)
+    if ep_done:
+        game.reset()
+        handle_x = slider_x + (slider_width / 2)
+        action = 0.0
+    if game_done:
+        running = False
 
-    # Update reference line
-    step_count += 1
-    reference.step(step_count)
-
-    # Update ball position
-    ball_state.step(action)
-    ball_state.clip()
-
-    # Render
+    ### Render ----------
     screen.fill(WHITE)
 
     # Draw gameplay area
     pygame.draw.rect(screen, WHITE, (0, 0, SCREEN_WIDTH, GAME_HEIGHT))
 
     # Draw reference line
-    line_y_values = reference.get()
+    line_y_values = game.reference.values
     for x in range(len(line_y_values) - 1):
         pygame.draw.line(screen, BLACK,
                          (x, line_y_values[x]),
                          (x + 1, line_y_values[x + 1]))
 
     # Draw blue ball
-    pygame.draw.circle(screen, BLUE, (int(ball_state.x), int(ball_state.y)), BALL_RADIUS)
+    pygame.draw.circle(screen, BLUE, (int(game.ball.x), int(game.ball.y)), BALL_RADIUS)
 
     # Draw slider track
     pygame.draw.rect(screen, GRAY, (slider_x, slider_y, slider_width, slider_height))
@@ -104,16 +100,19 @@ while running:
     # Draw slider handle
     pygame.draw.circle(screen, DARK_GRAY, (int(handle_x), int(handle_y)), handle_radius)
 
+    # Add text
+    gui_str = f"step: {game.info.step}, episode: {game.info.episode}"
+    gui_text = font.render(gui_str, True, (0, 0, 0))
+    screen.blit(gui_text, dest=(0,0))
+
     # Update the display
     pygame.display.flip()
 
     # Frame rate
     clock.tick(FPS)
     
-    logger.log(time_step=step_count,
-               ball_state=ball_state,
-               reference_state=reference.values[int(ball_state.x)],
-               action=action)
+    ### Logging ----------
+    logger.log(game=game, action=action)
 
 logger.write(directory='data')
 pygame.quit()
