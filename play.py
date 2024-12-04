@@ -8,7 +8,7 @@ from game import *
 
 # Initialize Pygame
 pygame.init()
-game = Game(reference_type=sim.SineReference)
+game = Game(reference_type=sim.RampReference)
 
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))

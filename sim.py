@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import math
+import random
 from constants import *
 
 
@@ -57,12 +58,46 @@ class Reference:
         return self.y_ref() - ball_state.output()
     
     def step(self, time):
+        y = self.next_value(time)
+        self.values.pop(0)
+        self.values.append(y)
+        
+    def next_value(self, time):
         raise NotImplementedError()
         
     def reset(self):
         self.values.clear()
         self.init_values()
         
+        
+class StepReference(Reference):
+    def __init__(self, segment_length=200):
+        self.segment_length = segment_length
+        self.segment_height = GAME_HEIGHT / 2
+        self.segment_height_min = 100
+        self.segment_height_max = SCREEN_HEIGHT - 100
+        super().__init__()
+        
+    def next_value(self, time):
+        if time % self.segment_length == 0:
+            self.segment_height = random.randint(self.segment_height_min, self.segment_height_max)
+        return self.segment_height
+    
+
+class RampReference(Reference):
+    def __init__(self, segment_length=50):
+        self.segment_length = segment_length
+        self.slope = 0
+        super().__init__()
+        
+    def next_value(self, time):
+        if time % self.segment_length == 0:
+            # Encourage it to not saturate
+            self.slope = random.uniform(-1, 5) if self.values[-1] < (GAME_HEIGHT / 2) else random.uniform(-5, 1)
+        y = self.values[-1] + self.slope
+        y = max(BALL_RADIUS, min(GAME_HEIGHT - BALL_RADIUS, y))
+        
+        return y
         
 class SineReference(Reference):
     def __init__(self):
@@ -73,7 +108,7 @@ class SineReference(Reference):
         self.start_moving = False
         super().reset()
         
-    def step(self, time):
+    def next_value(self, time):
         frequency = 1 / 30
         amplitude = GAME_HEIGHT / 4
         
@@ -85,6 +120,4 @@ class SineReference(Reference):
         else:
             y = GAME_HEIGHT / 2
             
-        self.values.pop(0)
-        self.values.append(y)
-    
+        return y
