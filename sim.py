@@ -75,7 +75,7 @@ class StepReference(Reference):
         self.segment_length = segment_length
         self.segment_height = GAME_HEIGHT / 2
         self.segment_height_min = 100
-        self.segment_height_max = SCREEN_HEIGHT - 100
+        self.segment_height_max = SCREEN_HEIGHT - 150
         super().__init__()
         
     def next_value(self, time):
@@ -102,21 +102,25 @@ class RampReference(Reference):
 class SineReference(Reference):
     def __init__(self):
         self.start_moving = False
+        self.freq_interval = [1 / 30, 1/25]
+        self.amplitude_interval = [GAME_HEIGHT / 2, GAME_HEIGHT / 10]
+        
+        self.frequency = random.uniform(*self.freq_interval)
+        self.amplitude = random.uniform(*self.amplitude_interval)
         super().__init__()
         
     def reset(self):
         self.start_moving = False
+        self.frequency = random.uniform(*self.freq_interval)
+        self.amplitude = random.uniform(*self.amplitude_interval)
         super().reset()
         
     def next_value(self, time):
-        frequency = 1 / 30
-        amplitude = GAME_HEIGHT / 4
-        
-        if not self.start_moving and time % int((1/frequency)*2*3.14) == 0:
+        if not self.start_moving and time % int((1/self.frequency)*2*3.14) == 0:
             self.start_moving = True
             
         if self.start_moving:
-            y = (GAME_HEIGHT / 2) + amplitude * math.sin(frequency * time)
+            y = (GAME_HEIGHT / 2) + self.amplitude * math.sin(self.frequency * time)
         else:
             y = GAME_HEIGHT / 2
             
