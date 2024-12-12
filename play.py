@@ -30,7 +30,7 @@ handle_y = slider_y + (slider_height / 2)
 action = 0.0  # Initialize action at neutral, takes values in [-1, 1]
 dragging = False  # Flag to indicate if the handle is being dragged
 
-logger = Logger()
+logger = Logger(directory='data')
 pid = control.pid(0.05, 0, 0)
 
 parser = argparse.ArgumentParser()
@@ -116,7 +116,8 @@ while running:
     clock.tick(FPS)
     
     ### Logging ----------
-    logger.log(game=game, action=action)
+    if game.info.episode_step >= WARMUP_LENGTH:
+        logger.log(game=game, action=action)
     
     ### ----------
     # Must be the last thing done, otherwise the reset() can cause out of bounds
@@ -127,5 +128,5 @@ while running:
     if game_done:
         running = False
 
-logger.write(directory='data')
+logger.write()
 pygame.quit()

@@ -1,12 +1,14 @@
 import csv
 import os
 from datetime import datetime
-from constants import *
+import constants
 
 
 class Logger:
-    def __init__(self):
+    def __init__(self, directory):
         self.data = []
+        self.logged_constants = False
+        self.directory = os.path.join(directory, datetime.now().strftime('%Y-%m-%d-%H-%M-%S.csv'))
         
     def log(self, game, action):
         self.data.append({
@@ -19,17 +21,26 @@ class Logger:
             'cost': game.info.episode_costs()[-1],
         })
     
-    def write(self, directory=None, filename=None):
+    def write(self):
         assert(len(self.data) != 0)
-        if filename is None:
-            filename = datetime.now().strftime('%Y-%m-%d-%H-%M-%S.csv')
-    
-        if directory is not None:
-            filename = os.path.join(directory, filename)
-            if not os.path.exists(directory):
-                os.makedirs(directory)
         
-        with open(filename, 'w', newline='') as csvfile:
+        if not os.path.exists(self.directory):
+                os.makedirs(self.directory)
+        
+        if not self.logged_constants:
+            constants_fp = os.path.join(self.directory, 'constants.txt')
+            constants_dict = {
+                name: getattr(constants, name)
+                for name in dir(constants)
+                if name.isupper()
+            }
+            
+            with open(constants_fp, 'w', newline='') as f:
+                for k, v in constants_dict.items():
+                    f.write(f"{k}\t\t{v}\n")
+                        
+        data_fp = os.path.join(self.directory, 'data.csv')
+        with open(data_fp, 'w', newline='') as csvfile:
             fieldnames = list(self.data[0].keys())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()

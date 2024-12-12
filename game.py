@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-import copy
 import sim
 from constants import *   
 
