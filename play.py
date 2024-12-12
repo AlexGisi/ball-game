@@ -45,7 +45,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        if args.operator == "human":
+        if args.operator == "human" and game.info.episode_step > WARMUP_LENGTH:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # Check if the mouse is over the handle
                 mouse_x, mouse_y = event.pos
@@ -71,6 +71,7 @@ while running:
     
     ### Update game state ----------
     ep_done, game_done = game.step(action)
+    print(game.info.episode_step)
 
     ### Render ----------
     screen.fill(WHITE)
@@ -103,6 +104,10 @@ while running:
     cost_str = f"cost: {costs[-1]:.2f}, mean: {sum(costs)/len(costs):.2f}, sum: {sum(costs):.2f}"
     gui_text = font.render(cost_str, True, (0, 0, 0))
     screen.blit(gui_text, dest=(SCREEN_WIDTH-300,0))
+    
+    if game.info.episode_step < WARMUP_LENGTH:
+        warmup_str = font.render("WARM UP", True, (0, 0, 0))
+        screen.blit(warmup_str, dest=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
     # Update the display
     pygame.display.flip()

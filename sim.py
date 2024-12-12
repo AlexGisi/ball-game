@@ -46,10 +46,6 @@ class Reference:
             
     def init_values(self):
         self.values = [GAME_HEIGHT / 2] * SCREEN_WIDTH
-        
-        warmup_steps = int(SCREEN_WIDTH - BALL_X_INIT - REF_WARMUP_LENGTH)
-        for i in range(warmup_steps):
-            self.step(-warmup_steps + i)
     
     def y_ref(self):
         return self.values[int(BALL_X_INIT)]
