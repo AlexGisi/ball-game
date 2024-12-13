@@ -30,12 +30,13 @@ handle_y = slider_y + (slider_height / 2)
 action = 0.0  # Initialize action at neutral, takes values in [-1, 1]
 dragging = False  # Flag to indicate if the handle is being dragged
 
-logger = Logger(directory='data')
-pid = control.pid(0.05, 0, 0)
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--operator', default='human')
+parser.add_argument('--gain', default=1.0)
 args = parser.parse_args()
+
+logger = Logger(directory='data', name=str(args.gain))
+pid = control.pid(0.05, 0.0, 0.0)
 
 # Game Loop
 while running:
@@ -66,12 +67,13 @@ while running:
     error = game.reference.get_error(game.ball)      
     if args.operator == "pid":
         action = pid.control(error)
+    print(error)
     
     # print(f"{game.step}\t{action}\t{error}\t({game.ball.x}, {game.ball.y})")
     
     ### Update game state ----------
+    action *= float(args.gain)
     ep_done, game_done = game.step(action)
-    print(game.info.episode_step)
 
     ### Render ----------
     screen.fill(WHITE)
@@ -96,7 +98,7 @@ while running:
     pygame.draw.circle(screen, DARK_GRAY, (int(handle_x), int(handle_y)), handle_radius)
 
     # Add text
-    time_str = f"step: {game.info.step}, episode: {game.info.episode}"
+    time_str = f"step: {game.info.step}, episode: {game.info.episode}, episode step: {game.info.episode_step}"
     time_text = font.render(time_str, True, (0, 0, 0))
     screen.blit(time_text, dest=(0,0))
     
@@ -104,7 +106,7 @@ while running:
     cost_str = f"cost: {costs[-1]:.2f}, mean: {sum(costs)/len(costs):.2f}, sum: {sum(costs):.2f}"
     gui_text = font.render(cost_str, True, (0, 0, 0))
     screen.blit(gui_text, dest=(SCREEN_WIDTH-300,0))
-    
+        
     if game.info.episode_step < WARMUP_LENGTH:
         warmup_str = font.render("WARM UP", True, (0, 0, 0))
         screen.blit(warmup_str, dest=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
@@ -116,8 +118,7 @@ while running:
     clock.tick(FPS)
     
     ### Logging ----------
-    if game.info.episode_step >= WARMUP_LENGTH:
-        logger.log(game=game, action=action)
+    logger.log(game=game, action=action)
     
     ### ----------
     # Must be the last thing done, otherwise the reset() can cause out of bounds

@@ -5,10 +5,11 @@ import constants
 
 
 class Logger:
-    def __init__(self, directory):
+    def __init__(self, directory, name=None):
         self.data = []
         self.logged_constants = False
-        self.directory = os.path.join(directory, datetime.now().strftime('%Y-%m-%d-%H-%M-%S.csv'))
+        fp = name if name is not None else datetime.now().strftime('%Y-%m-%d-%H-%M-%S.csv')
+        self.directory = os.path.join(directory, fp)
         
     def log(self, game, action):
         self.data.append({

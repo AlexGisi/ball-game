@@ -112,12 +112,4 @@ class SineReference(Reference):
         super().reset()
         
     def next_value(self, time):
-        if not self.start_moving and time % int((1/self.frequency)*2*3.14) == 0:
-            self.start_moving = True
-            
-        if self.start_moving:
-            y = (GAME_HEIGHT / 2) + self.amplitude * math.sin(self.frequency * time)
-        else:
-            y = GAME_HEIGHT / 2
-            
-        return y
+        return (GAME_HEIGHT / 2) + self.amplitude * math.sin(self.frequency * time)
