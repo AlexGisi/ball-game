@@ -37,6 +37,8 @@ args = parser.parse_args()
 
 logger = Logger(directory='data', name=str(args.gain))
 pid = control.pid(0.05, 0.0, 0.0)
+hom = control.OperatorModel()
+
 
 # Game Loop
 while running:
@@ -67,11 +69,13 @@ while running:
     error = game.reference.get_error(game.ball)      
     if args.operator == "pid":
         action = pid.control(error)
-    print(error)
+    elif args.operator == "hom":
+        action = hom.control(error)
     
     # print(f"{game.step}\t{action}\t{error}\t({game.ball.x}, {game.ball.y})")
     
     ### Update game state ----------
+    # print(action)
     action *= float(args.gain)
     ep_done, game_done = game.step(action)
 
@@ -89,7 +93,7 @@ while running:
                          (x + 1, line_y_values[x + 1]))
 
     # Draw blue ball
-    pygame.draw.circle(screen, BLUE, (int(game.ball.x), int(game.ball.y)), BALL_RADIUS)
+    pygame.draw.circle(screen, BLUE, (int(game.ball.x), int(game.ball.position())), BALL_RADIUS)
 
     # Draw slider track
     pygame.draw.rect(screen, GRAY, (slider_x, slider_y, slider_width, slider_height))
@@ -124,6 +128,7 @@ while running:
     # Must be the last thing done, otherwise the reset() can cause out of bounds
     if ep_done:
         game.reset()
+        hom.reset()  # todo
         handle_x = slider_x + (slider_width / 2)
         action = 0.0
     if game_done:

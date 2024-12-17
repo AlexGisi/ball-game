@@ -1,42 +1,59 @@
-from dataclasses import dataclass, field
 import math
 import random
+import numpy as np
+from scipy.integrate import quad_vec
+from scipy.linalg import expm
 from constants import *
 
 
 class BallState:
     def __init__(self):
         self.x: float = BALL_X_INIT
-        self.y: float = BALL_Y_INIT
-        self.vy: float = BALL_VY_INIT
         self.vy_abs_max: float = BALL_VY_ABS_MAX
+
+        # self.state = np.array([[BALL_Y_INIT, BALL_VY_INIT]]).T
+        self.state = np.array([[0, 0]]).T
+        self.A = np.array([
+            [-3.1416, -2.4674],
+            [1.00, 0.0],
+        ])
+        self.B = np.array([
+            [2.0],
+            [0.0],
+        ])
     
-    # def step(self, action):
-    #     dt = 1 / FPS
-    #     self.y = self.y + dt * self.vy
-    #     self.vy = self.vy + dt * action * 1000
-    
-    def step(self, action):
+    def step(self, action, max_error=0.01):
         dt = 1 / FPS
-        self.y = self.y + dt * self.vy
-        self.vy = action * 200
+
+        Ad = expm(self.A * dt)
+
+        integrand = lambda tau: expm(self.A * (dt - tau)) @ self.B
+        Bd, error = quad_vec(integrand, 0, dt)
+
+        if error > max_error:
+            raise ValueError()
+        
+        self.state = Ad @ self.state + Bd * action
         
     def reset(self):
         self.x: float = BALL_X_INIT
-        self.y: float = BALL_Y_INIT
-        self.vy: float = BALL_VY_INIT
+        self.state = np.array([[0, 0]]).T
     
     def clip(self):
-        self.y = max(BALL_RADIUS, min(GAME_HEIGHT - BALL_RADIUS, self.y))
-        self.vy = max(-self.vy_abs_max, min(self.vy_abs_max, self.vy))
+        # self.y = max(BALL_RADIUS, min(GAME_HEIGHT - BALL_RADIUS, self.y))
+        # self.vy = max(-self.vy_abs_max, min(self.vy_abs_max, self.vy))
+        pass
         
-    def output(self):
+    def position(self):
         """Represents the h(x) in y_i = h(x_i).
 
         Returns:
             float: ball position
         """
-        return self.y
+        return (float(self.state[1]) * 500) + BALL_Y_INIT
+    
+    def velocity(self):
+        return float(self.state[0])
         
 
 class Reference:
@@ -51,7 +68,7 @@ class Reference:
         return self.values[int(BALL_X_INIT)]
     
     def get_error(self, ball_state):
-        return self.y_ref() - ball_state.output()
+        return self.y_ref() - ball_state.position()
     
     def step(self, time):
         y = self.next_value(time)
@@ -98,7 +115,9 @@ class RampReference(Reference):
 class SineReference(Reference):
     def __init__(self):
         self.start_moving = False
-        self.freq_interval = [1 / 30, 1/25]
+        # self.freq_interval = np.array([0.25, 0.4]) * (2 * np.pi) / FPS
+        # self.freq_interval = np.array([1.57, 2.51]) / FPS
+        self.freq_interval = np.array([0.1, 1.0]) / FPS
         self.amplitude_interval = [GAME_HEIGHT / 2, GAME_HEIGHT / 10]
         
         self.frequency = random.uniform(*self.freq_interval)
@@ -110,6 +129,7 @@ class SineReference(Reference):
         self.frequency = random.uniform(*self.freq_interval)
         self.amplitude = random.uniform(*self.amplitude_interval)
         super().reset()
+        print(self.frequency)
         
     def next_value(self, time):
         return (GAME_HEIGHT / 2) + self.amplitude * math.sin(self.frequency * time)

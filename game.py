@@ -52,7 +52,7 @@ class Game:
         self.info.reset()
         
     def cost(self):
-        return (self.reference.y_ref() - self.ball.output())**2 / 1_000
+        return (self.reference.y_ref() - self.ball.position())**2 / 1_000
     
     def episode_done(self):
         return self.info.episode_step > EPISODE_MAX_LENGTH
@@ -63,7 +63,7 @@ class Game:
 
 class TrainingObservation:
     def __init__(self, ball, ref, action, cost) -> None:
-        self.y = ball.output()
+        self.y = ball.position()
         self.y_ref = ref.y_ref()
         self.action = action
         self.cost = cost
@@ -71,5 +71,5 @@ class TrainingObservation:
     
 class OperationObservation:
     def __init__(self, game_state) -> None:
-        self.y = game_state.ball.output()
+        self.y = game_state.ball.position()
     

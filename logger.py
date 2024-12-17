@@ -15,11 +15,12 @@ class Logger:
         self.data.append({
             'step': game.info.step,
             'episode': game.info.episode,
-            'ball_y': game.ball.y,
-            'ball_vy': game.ball.vy,
+            'ball_y': game.ball.position(),
+            'ball_vy': game.ball.velocity(),
             'reference_y': game.reference.values[int(game.ball.x)],
             'action': action,
             'cost': game.info.episode_costs()[-1],
+            'error': game.reference.get_error(game.ball),
         })
     
     def write(self):
