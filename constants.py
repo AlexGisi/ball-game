@@ -6,6 +6,7 @@ SCREEN_HEIGHT = 600
 GAME_HEIGHT = 500  # Height allocated for the gameplay area
 SLIDER_HEIGHT = SCREEN_HEIGHT - GAME_HEIGHT  # Height for the slider area
 BALL_RADIUS = 10
+Y_LIMIT = SCREEN_WIDTH // 2
 
 BALL_X_INIT = SCREEN_WIDTH * 0.5
 BALL_Y_INIT = GAME_HEIGHT / 2

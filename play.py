@@ -37,7 +37,7 @@ args = parser.parse_args()
 
 logger = Logger(directory='data', name=str(args.gain))
 pid = control.pid(0.05, 0.0, 0.0)
-hom = control.OperatorModel()
+hom = control.OperatorModel(game.ball)
 
 
 # Game Loop
@@ -66,13 +66,15 @@ while running:
                     # Update action value based on handle position
                     action = ((handle_x - slider_x) / slider_width)*2 - 1
               
-    error = game.reference.get_error(game.ball)      
+    # error = game.reference.get_error(game.ball)
+    y_ref = game.reference.y_ref()
+    y_ball = game.ball.position()   
     if args.operator == "pid":
-        action = pid.control(error)
+        action = pid.control(y_ref, y_ball)
     elif args.operator == "hom":
-        action = hom.control(error)
+        action = hom.control(y_ref, y_ball)
     
-    # print(f"{game.step}\t{action}\t{error}\t({game.ball.x}, {game.ball.y})")
+    print(f"{action:.2f}, y_ref: {y_ref:.2f}, y_ball: {y_ball:.2f}")
     
     ### Update game state ----------
     # print(action)
@@ -89,11 +91,11 @@ while running:
     line_y_values = game.reference.values
     for x in range(len(line_y_values) - 1):
         pygame.draw.line(screen, BLACK,
-                         (x, line_y_values[x]),
-                         (x + 1, line_y_values[x + 1]))
+                         (x, line_y_values[x] + (GAME_HEIGHT / 2)),
+                         (x + 1, line_y_values[x + 1] + (GAME_HEIGHT / 2)))
 
     # Draw blue ball
-    pygame.draw.circle(screen, BLUE, (int(game.ball.x), int(game.ball.position())), BALL_RADIUS)
+    pygame.draw.circle(screen, BLUE, (int(game.ball.x), (GAME_HEIGHT / 2) + int(game.ball.position())), BALL_RADIUS)
 
     # Draw slider track
     pygame.draw.rect(screen, GRAY, (slider_x, slider_y, slider_width, slider_height))

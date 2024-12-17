@@ -1,8 +1,8 @@
 import math
 import random
 import numpy as np
-from scipy.integrate import quad_vec
-from scipy.linalg import expm
+
+import util
 from constants import *
 
 
@@ -11,8 +11,7 @@ class BallState:
         self.x: float = BALL_X_INIT
         self.vy_abs_max: float = BALL_VY_ABS_MAX
 
-        # self.state = np.array([[BALL_Y_INIT, BALL_VY_INIT]]).T
-        self.state = np.array([[0, 0]]).T
+        self.state = np.array([[0, 0]]).T 
         self.A = np.array([
             [-3.1416, -2.4674],
             [1.00, 0.0],
@@ -21,19 +20,12 @@ class BallState:
             [2.0],
             [0.0],
         ])
+        self.C = np.array([[0.0, 1.0]])
+
+        self.Ad, self.Bd = util.discretized_lti(self.A, self.B)
     
-    def step(self, action, max_error=0.01):
-        dt = 1 / FPS
-
-        Ad = expm(self.A * dt)
-
-        integrand = lambda tau: expm(self.A * (dt - tau)) @ self.B
-        Bd, error = quad_vec(integrand, 0, dt)
-
-        if error > max_error:
-            raise ValueError()
-        
-        self.state = Ad @ self.state + Bd * action
+    def step(self, action):
+        self.state = self.Ad @ self.state + self.Bd * action
         
     def reset(self):
         self.x: float = BALL_X_INIT
@@ -50,7 +42,7 @@ class BallState:
         Returns:
             float: ball position
         """
-        return (float(self.state[1]) * 500) + BALL_Y_INIT
+        return (float(self.state[1]) * 500)
     
     def velocity(self):
         return float(self.state[0])
@@ -62,7 +54,7 @@ class Reference:
         self.init_values()
             
     def init_values(self):
-        self.values = [GAME_HEIGHT / 2] * SCREEN_WIDTH
+        self.values = [0] * SCREEN_WIDTH
     
     def y_ref(self):
         return self.values[int(BALL_X_INIT)]
@@ -86,9 +78,9 @@ class Reference:
 class StepReference(Reference):
     def __init__(self, segment_length=200):
         self.segment_length = segment_length
-        self.segment_height = GAME_HEIGHT / 2
-        self.segment_height_min = 100
-        self.segment_height_max = SCREEN_HEIGHT - 150
+        self.segment_height = 0
+        self.segment_height_min = -Y_LIMIT + 100
+        self.segment_height_max = Y_LIMIT - 100
         super().__init__()
         
     def next_value(self, time):
@@ -118,7 +110,7 @@ class SineReference(Reference):
         # self.freq_interval = np.array([0.25, 0.4]) * (2 * np.pi) / FPS
         # self.freq_interval = np.array([1.57, 2.51]) / FPS
         self.freq_interval = np.array([0.1, 1.0]) / FPS
-        self.amplitude_interval = [GAME_HEIGHT / 2, GAME_HEIGHT / 10]
+        self.amplitude_interval = [Y_LIMIT / 10, Y_LIMIT - 200]
         
         self.frequency = random.uniform(*self.freq_interval)
         self.amplitude = random.uniform(*self.amplitude_interval)
@@ -132,4 +124,4 @@ class SineReference(Reference):
         print(self.frequency)
         
     def next_value(self, time):
-        return (GAME_HEIGHT / 2) + self.amplitude * math.sin(self.frequency * time)
+        return self.amplitude * math.sin(self.frequency * time)
