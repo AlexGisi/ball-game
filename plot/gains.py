@@ -3,6 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import argparse
 
+
+# Custom cost for each step
+# ACTION_DELTA_WEIGHT = 1e2
+# ERROR_WEIGHT = 1e-3
+
+ACTION_DELTA_WEIGHT = 1e2
+ERROR_WEIGHT = 1e-3
+
 # Set the directory containing the subdirectories
 parser = argparse.ArgumentParser()
 parser.add_argument('directory')
@@ -43,7 +51,14 @@ boxplot_data = []
 labels = []
 
 for name, df in df_dict.items():
-    avg_cost_by_episode = df.groupby('episode')['cost'].mean()  # Series of avg cost per episode
+    df['error'] = df['reference_y'] - df['ball_y']
+    df['action_delta'] = df['action'].diff()
+
+    # Custom cost
+    # df['cost_custom'] = df['cost']
+    df['cost_custom'] = df['action_delta']**2 * ACTION_DELTA_WEIGHT + df['error']**2 * ERROR_WEIGHT
+
+    avg_cost_by_episode = df.groupby('episode')['cost_custom'].mean()  # Series of avg cost per episode
     boxplot_data.append(avg_cost_by_episode.values)
     labels.append(str(name))
 
@@ -56,7 +71,7 @@ ax.boxplot(boxplot_data, labels=labels)
 # Set axis labels and title
 ax.set_xlabel("gain")
 ax.set_ylabel("mean episode cost")
-ax.set_title("mean episode costs for different gains")
+ax.set_title(f"mean episode costs for different gains (control derivative weight={ACTION_DELTA_WEIGHT}, error weight={ERROR_WEIGHT})")
 
 # Display the figure
 plt.tight_layout()
