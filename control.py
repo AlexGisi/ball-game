@@ -37,7 +37,7 @@ class OperatorModel:
             [0.0, 0.0],
             [0.0, 0.0]
         ])  # Process noise covariance
-        R = R = np.array([[0.1]])  # Observation noise covariance
+        R = np.array([[0.1]])  # Observation noise covariance
         
         self.F = ball_state.A
         self.B = ball_state.B
